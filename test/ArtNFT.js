@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("ArtNFT Kapsamlı Test Süreci", function () {
-  let ArtNFT, artNft, owner, artist, user, stranger;
+  let  artNft, owner, artist, user, stranger;
 
   beforeEach(async function () {
     [owner, artist, user, stranger] = await ethers.getSigners();
