@@ -50,4 +50,5 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
         expect(artistBalanceAfter).to.be.above(artistBalanceBefore);
     });
   });
+
 });
