@@ -11,8 +11,9 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
   });
 
   describe("1. Temel Ayarlar ve Telif", function () {
-    it("İsim ve Sembol doğru mu?", async () => {
+    it("İsim ve Sembol doğru mu?", async function ()  {
       expect(await artNft.name()).to.equal("Art Digital Gallery");
+      expect(await artNft.symbol()).to.equal("ARTNFT");
     });
     
     it("Telif payı (Royalty) %5 olarak doğru hesaplanmalı", async function () {
@@ -20,8 +21,9 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
       expect(receiver).to.equal(owner.address);
       expect(amount).to.equal(ethers.parseUnits("0.05", "ether"));
     });
-  });
 
+  });
+ 
   describe("2. Whitelist ve Güvenlik Yönetimi", function () {
     it("Owner sanatçı ekleyebilmeli", async function () {
       await artNft.addArtist(artist.address);
@@ -39,6 +41,7 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
       await expect(artNft.connect(stranger).addArtist(stranger.address))
         .to.be.revertedWithCustomError(artNft, "OwnableUnauthorizedAccount");
     });
+
   });
 
   describe("3. Gelişmiş Mintleme Senaryoları", function () {
