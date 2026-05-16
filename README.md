@@ -3,7 +3,6 @@
 A decentralized digital art gallery built on Ethereum, featuring royalty payments for artists, whitelist-based minting, and ERC20 token payments.
 
 ## What Makes This Different?
-
 Unlike basic NFT marketplaces, this project implements:
 - **ERC2981 Royalty Standard** — artists earn automatically on every resale
 - **Whitelist System** — only approved artists can mint NFTs
@@ -49,15 +48,17 @@ ERC20 payment token (ART) used across the platform. Features minting, burning, a
 ### ArtNFT.sol
 ERC721 NFT contract with URI storage, ERC2981 royalty standard, ERC721Enumerable for listing, and whitelist-based minting. Only approved artists can mint.
 
+**Supports secure ERC721Burnable mechanism allowing token holders to burn their NFTs safely.** Only approved artists can mint.
+
 ### ArtMarketplace.sol
 NFT trading platform with automatic royalty distribution. On every sale: artist receives royalty, platform takes 2% fee, seller gets the rest.
 
 ## Test Coverage
 
-- ArtToken: 8 tests
-- ArtNFT: 13 tests
-- ArtMarketplace: 5 tests
-- **Total: 26 tests**
+- ArtToken: 17 tests
+- ArtNFT: 15 tests
+- ArtMarketplace: 2 tests
+- **Total: 34 tests ** (%100 passing)
 
 ## Installation
 
