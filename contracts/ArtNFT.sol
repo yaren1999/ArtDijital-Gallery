@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 
-contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, Ownable {
+contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, Ownable {
     uint256 private _nextTokenId;
     mapping(address => bool) public whitelistedArtists;
 
@@ -61,7 +62,7 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, Ownable {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721Enumerable, ERC721URIStorage, ERC2981)
+        override(ERC721, ERC721Enumerable, ERC721URIStorage, ERC2981) 
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

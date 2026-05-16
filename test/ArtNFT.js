@@ -78,7 +78,6 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
       expect(await artNft.totalSupply()).to.equal(2);
     });
 
-    
     it("Sanatçının sahip olduğu NFT ID'leri listelenebilmeli", async function () {
       expect(await artNft.tokenOfOwnerByIndex(artist.address, 0)).to.equal(0);
       expect(await artNft.tokenOfOwnerByIndex(artist.address, 1)).to.equal(1);
@@ -89,14 +88,35 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
     });
   });
 
+
   describe("5. Transfer ve Yakma", function () {
-    it("Kullanıcı NFT'sini transfer edebilmeli", async function () {
+    beforeEach(async function () {
       await artNft.addArtist(artist.address);
-      await artNft.connect(artist).safeMint(artist.address, "uri");
+      await artNft.connect(artist).safeMint(artist.address, "uri-burn-test");
+    });
+
+    it("Kullanıcı NFT'sini transfer edebilmeli", async function () {
       await artNft.connect(artist).transferFrom(artist.address, user.address, 0);
       expect(await artNft.ownerOf(0)).to.equal(user.address);
     });
-    
-    
+
+    it("NFT sahibi NFT'sini başarıyla yakabilmeli (burn)", async function () {
+      await expect(artNft.connect(artist).burn(0)).to.not.be.reverted;
+      expect(await artNft.totalSupply()).to.equal(0);
+    });
+
+    it("Yakılan bir NFT'nin sahibi sorgulandığında kontrat hata vermeli", async function () {
+      await artNft.connect(artist).burn(0);
+
+      await expect(artNft.ownerOf(0))
+        .to.be.revertedWithCustomError(artNft, "ERC721NonexistentToken");
+    });
+
+    it("Başkasına ait bir NFT'yi yabancı biri yakamamalı", async function () {
+      await expect(artNft.connect(stranger).burn(0))
+        .to.be.revertedWithCustomError(artNft, "ERC721InsufficientApproval");
+    });
+
   });
+
 });
