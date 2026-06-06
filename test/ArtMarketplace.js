@@ -56,7 +56,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
   });
 
-  describe("Listeleme iptal etme", async function () {
+  describe("Listeleme iptal etme", function () {
     it("sadece satıcı listeyi silebilir", async function () {
       await nft.connect(artist).approve(await marketplace.getAddress(), 0);
       await marketplace.connect(artist).listNFT(0, PRICE);
