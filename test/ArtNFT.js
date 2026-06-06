@@ -74,8 +74,8 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
       await artNft.connect(artist).safeMint(artist.address, "uri2");
     });
 
-    it("Toplam arz (totalSupply) mint sonrası doğru artmalı", async function () {
-      expect(await artNft.totalSupply()).to.equal(2);
+    it("Global index üzerinden NFT ID'si bulunabilmeli", async function () {
+      expect(await artNft.tokenByIndex(0)).to.equal(0);
     });
 
     it("Sanatçının sahip olduğu NFT ID'leri listelenebilmeli", async function () {
@@ -83,9 +83,11 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
       expect(await artNft.tokenOfOwnerByIndex(artist.address, 1)).to.equal(1);
     });
 
-    it("Global index üzerinden NFT ID'si bulunabilmeli", async function () {
-      expect(await artNft.tokenByIndex(1)).to.equal(1);
+    it("Toplam arz (totalSupply) mint sonrası doğru artmalı", async function () {
+      expect(await artNft.totalSupply()).to.equal(2);
     });
+
+   
   });
 
 

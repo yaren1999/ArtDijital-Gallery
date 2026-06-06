@@ -12,6 +12,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     ArtToken = await ethers.getContractFactory("ArtToken");
     token = await ArtToken.deploy(ethers.parseUnits("1000000", 18)); 
     const tokenAddress = await token.getAddress();
+    
     ArtNFT = await ethers.getContractFactory("ArtNFT");
     nft = await ArtNFT.deploy();
     const nftAddress = await nft.getAddress();
@@ -23,6 +24,10 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     await nft.addArtist(artist.address);
     await nft.connect(artist).safeMint(artist.address, "ipfs://art");
   });
+
+
+
+
 
   describe("Satış ve Royalty Süreci", function () {
     it("Alıcı NFT'yi satın alabilmeli ve royalty sanatçıya gitmeli", async function () {
@@ -48,6 +53,24 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
         const artistBalanceAfter = await token.balanceOf(artist.address);
 
         expect(artistBalanceAfter).to.be.above(artistBalanceBefore);
+    });
+  });
+
+  describe("Listeleme iptal etme", async function () {
+    it("sadece satıcı listeyi silebilir", async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+      await marketplace.connect(artist).listNFT(0, PRICE);
+      await marketplace.connect(artist).cancelListing(0);
+      const listing = await marketplace.listings(0);
+      expect(listing.isActive).to.equal(false);
+    });
+
+    it("satıcı olmayan Listeyi silemez", async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(),0);
+      await marketplace.connect(artist).listNFT(0, PRICE);
+      await expect(
+        marketplace.connect(buyer).cancelListing(0)
+      ).to.be.revertedWith("satici degilsin");
     });
   });
 

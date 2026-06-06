@@ -46,7 +46,6 @@ contract ArtMarketplace is Ownable {
         Listing storage listing = listings[_tokenId];
         require(listing.isActive, "Bu NFT satista degil");
         require(paymentToken.balanceOf(msg.sender) >= listing.price, "Yetersiz bakiye");
-
         listing.isActive = false;
 
         uint256 feeAmount = (listing.price * marketplaceFeePercent) / 100;
@@ -65,6 +64,15 @@ contract ArtMarketplace is Ownable {
         emit NFTSold(_tokenId, msg.sender, listing.price);
     }
 
+    function cancelListing(uint256 _tokenId) public {
+        Listing storage listing = listings[_tokenId];
+        require(listing.isActive,"Ilan aktif degil");
+        require(listing.seller==msg.sender,"satici degilsin");
+
+        listing.isActive = false;
+        emit ListingCanceled(_tokenId, msg.sender);
+    }
+     
     function withdrawFees() public onlyOwner {
         uint256 balance = paymentToken.balanceOf(address(this));
         paymentToken.transfer(owner(), balance);
