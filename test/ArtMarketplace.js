@@ -63,32 +63,36 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
   });    
 
 
-  describe("Satış ve Royalty Süreci", function () {
-    it("Alıcı NFT'yi satın alabilmeli ve royalty sanatçıya gitmeli", async function () {
+  describe("buyNFT testleri", function () {
+  
+    beforeEach(async function () {
+     await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+     await marketplace.connect(artist).listNFT(0, PRICE);
+     await token.connect(buyer).approve(await marketplace.getAddress(), PRICE);
 
-      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
-      await marketplace.connect(artist).listNFT(0, PRICE);
-      await token.connect(buyer).approve(await marketplace.getAddress(), PRICE);
-      const royaltyReceiverBalanceBefore = await token.balanceOf(owner.address);
+    });
 
+    it("Alıcı NFT'nin sahibi olmalı", async function () {
+     await marketplace.connect(buyer).buyNFT(0);
+     expect(await nft.ownerOf(0)).to.equal(buyer.address);
+    });
+
+    it("Royalty sanatçıya gitmeli", async function () {
+     const before = await token.balanceOf(owner.address);
+     await marketplace.connect(buyer).buyNFT(0);
+     const after = await token.balanceOf(owner.address);
+     expect(after).to.be.above(before);
+    });
+
+    it("Satıcıya ödeme gitmeli", async function () {
+      const before = await token.balanceOf(artist.address);
       await marketplace.connect(buyer).buyNFT(0);
-      expect(await nft.ownerOf(0)).to.equal(buyer.address); 
-      const royaltyReceiverBalanceAfter = await token.balanceOf(owner.address);
-      expect(royaltyReceiverBalanceAfter).to.be.above(royaltyReceiverBalanceBefore);
+      const after = await token.balanceOf(artist.address);
+      expect(after).to.be.above(before);
     });
 
-    it("Satıcıya (Artist) giden miktar doğru olmalı", async function () {
-        await nft.connect(artist).approve(await marketplace.getAddress(), 0);
-        await marketplace.connect(artist).listNFT(0, PRICE);
-        await token.connect(buyer).approve(await marketplace.getAddress(), PRICE);
-
-        const artistBalanceBefore = await token.balanceOf(artist.address);
-        await marketplace.connect(buyer).buyNFT(0);
-        const artistBalanceAfter = await token.balanceOf(artist.address);
-
-        expect(artistBalanceAfter).to.be.above(artistBalanceBefore);
-    });
   });
+
 
   describe("Listeleme iptal etme Testi", function () {
     it("sadece satıcı listeyi silebilir", async function () {
@@ -102,12 +106,13 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     it("satıcı olmayan Listeyi silemez", async function () {
       await nft.connect(artist).approve(await marketplace.getAddress(),0);
       await marketplace.connect(artist).listNFT(0, PRICE);
+      
       await expect(
         marketplace.connect(buyer).cancelListing(0)
       ).to.be.revertedWith("satici degilsin");
     });
+
   });
 
   
-
 });
