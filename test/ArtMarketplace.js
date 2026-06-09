@@ -26,7 +26,41 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
   });
 
 
+  describe("listNFT", function () {
+   it("NFT listelenebilmeli", async function () {
+    await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+    await marketplace.connect(artist).listNFT(0 , PRICE);
+    const listing = await marketplace.listings(0);
 
+    expect(listing.seller).to.equal(artist)
+    expect(listing.tokenId).to.equal(0);
+    expect(listing.isActive).to.equal(true);
+    expect(listing.price).to.equal(PRICE);
+   });
+
+   it("NFT sahibi olmayan listeleyemez", async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+
+      await expect(
+      marketplace.connect(buyer).listNFT(0, PRICE)
+      ).to.be.revertedWith("Bu NFT size ait degil");
+    });
+
+    it("Fiyat 0 olamaz", async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+
+      await expect(
+      marketplace.connect(artist).listNFT(0, 0)
+      ).to.be.revertedWith("Fiyat sifirdan buyuk olmali");
+
+    });
+
+    it("Marketplace yetkisi yoksa listelenemez", async function () {
+      await expect(
+      marketplace.connect(artist).listNFT(0, PRICE)
+      ).to.be.revertedWith("Marketplace yetkilendirilmedi");
+    });
+  });    
 
 
   describe("Satış ve Royalty Süreci", function () {
@@ -56,7 +90,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
   });
 
-  describe("Listeleme iptal etme", function () {
+  describe("Listeleme iptal etme Testi", function () {
     it("sadece satıcı listeyi silebilir", async function () {
       await nft.connect(artist).approve(await marketplace.getAddress(), 0);
       await marketplace.connect(artist).listNFT(0, PRICE);
@@ -73,5 +107,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
       ).to.be.revertedWith("satici degilsin");
     });
   });
+
+  
 
 });

@@ -24,6 +24,7 @@ contract ArtMarketplace is Ownable {
     event NFTListed(uint256 indexed tokenId, address indexed seller, uint256 price);
     event NFTSold(uint256 indexed tokenId, address indexed buyer, uint256 price);
     event ListingCanceled(uint256 indexed tokenId, address indexed seller);
+    event PriceUpdated(uint256 indexed tokenId , uint256 indexed newPrice);
 
     constructor(address _paymentToken, address _nftContract) Ownable(msg.sender) {
         paymentToken = IERC20(_paymentToken);
@@ -72,6 +73,7 @@ contract ArtMarketplace is Ownable {
         listing.isActive = false;
         emit ListingCanceled(_tokenId, msg.sender);
     }
+
      
     function withdrawFees() public onlyOwner {
         uint256 balance = paymentToken.balanceOf(address(this));
@@ -82,4 +84,4 @@ contract ArtMarketplace is Ownable {
         require(_newFee <= 10, "Komisyon cok yuksek");
         marketplaceFeePercent = _newFee;
     }
-}
+} 
