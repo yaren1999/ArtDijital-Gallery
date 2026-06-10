@@ -167,7 +167,38 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
   });
 
   
-});
+ });
 
-  
+ describe("Fiyat güncelleme (update) testleri", function () {
+    const NEW_PRICE = ethers.parseUnits("150", 18); 
+
+    beforeEach(async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+      await marketplace.connect(artist).listNFT(0, PRICE);
+    });
+
+    
+    it("satıcı fiyatı güncelleyebilmeli", async function () {
+      const listingBefore = await marketplace.listings(0);
+      expect(listingBefore.price).to.equal(PRICE);
+      await marketplace.connect(artist).updatePrice(0, NEW_PRICE);
+
+      const listingAfter = await marketplace.listings(0);
+      expect(listingAfter.price).to.equal(NEW_PRICE);
+    });
+
+   
+    it("satıcı olmayan fiyat güncelleyemez", async function () {
+      await expect(
+         marketplace.connect(buyer).updatePrice(0, NEW_PRICE)
+      ).to.be.revertedWith("satici degilsin");
+    });
+
+    it("yeni fiyat 0 olarak güncellenemez", async function () {
+      await expect(
+         marketplace.connect(artist).updatePrice(0, 0)
+      ).to.be.revertedWith("gecersiz fiyat");
+    });
+ });
+
 });

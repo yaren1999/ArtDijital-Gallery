@@ -74,6 +74,18 @@ contract ArtMarketplace is Ownable {
         emit ListingCanceled(_tokenId, msg.sender);
     }
 
+    function updatePrice(uint256 tokenId, uint256 newPrice) public {
+      Listing storage listing = listings[tokenId];
+      require(listing.isActive, "Ilan aktif degil");
+      require(listing.seller == msg.sender, "satici degilsin");
+      require(newPrice > 0, "gecersiz fiyat");
+
+      listing.price = newPrice;  
+    
+      emit PriceUpdated(tokenId, newPrice);
+    }
+
+
      
     function withdrawFees() public onlyOwner {
         uint256 balance = paymentToken.balanceOf(address(this));
