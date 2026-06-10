@@ -123,7 +123,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
      await expect(
      marketplace.connect(poorBuyer).buyNFT(0)
      ).to.be.revertedWith("Yetersiz bakiye");
-     
+
     });
 
     it("NFTSold event emit edilmeli", async function () {
@@ -137,24 +137,37 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
 
 
   describe("Listeleme iptal etme Testi", function () {
-    it("sadece satıcı listeyi silebilir", async function () {
-      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
-      await marketplace.connect(artist).listNFT(0, PRICE);
-      await marketplace.connect(artist).cancelListing(0);
-      const listing = await marketplace.listings(0);
-      expect(listing.isActive).to.equal(false);
+  
+    beforeEach(async function () {
+     await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+     await marketplace.connect(artist).listNFT(0, PRICE);
+   });
+
+   it("Aktif olmayan veya zaten iptal edilmiş bir ilan tekrar iptal edilemez", async function () {
+     await marketplace.connect(artist).cancelListing(0);
+    
+     await expect(
+      marketplace.connect(artist).cancelListing(0)
+     ).to.be.revertedWith("Ilan aktif degil"); 
     });
 
-    it("satıcı olmayan Listeyi silemez", async function () {
-      await nft.connect(artist).approve(await marketplace.getAddress(),0);
-      await marketplace.connect(artist).listNFT(0, PRICE);
-      
-      await expect(
-        marketplace.connect(buyer).cancelListing(0)
-      ).to.be.revertedWith("satici degilsin");
+
+    it("Sadece satıcı listeyi silebilir", async function () {
+     await marketplace.connect(artist).cancelListing(0);
+    
+     const listing = await marketplace.listings(0);
+     expect(listing.isActive).to.equal(false);
     });
 
+    it("Satıcı olmayan listeyi silemez", async function () {
+  
+    await expect(
+      marketplace.connect(buyer).cancelListing(0)
+    ).to.be.revertedWith("satici degilsin");
   });
+
+  
+});
 
   
 });
