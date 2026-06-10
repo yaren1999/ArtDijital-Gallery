@@ -60,6 +60,16 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
       marketplace.connect(artist).listNFT(0, PRICE)
       ).to.be.revertedWith("Marketplace yetkilendirilmedi");
     });
+
+    it("NFTlisted event emit edilmeli", async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+
+      await expect(
+      marketplace.connect(artist).listNFT(0, PRICE)
+      ).to.emit(marketplace, "NFTListed")
+      .withArgs(0, artist.address, PRICE);
+    });
+
   });    
 
 
@@ -89,6 +99,38 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
       await marketplace.connect(buyer).buyNFT(0);
       const after = await token.balanceOf(artist.address);
       expect(after).to.be.above(before);
+    });
+
+    it("NFT satışta değilse satın alınamaz", async function () {
+      await marketplace.connect(buyer).buyNFT(0);
+  
+      await expect(
+      marketplace.connect(buyer).buyNFT(0)
+      ).to.be.revertedWith("Bu NFT satista degil");
+
+    });
+
+    it("yetersiz bakiye ile satın alınamaz", async function () {
+     const [,,,poorBuyer] = await ethers.getSigners();
+  
+     await token.connect(poorBuyer).approve(
+     await marketplace.getAddress(), PRICE);
+
+     await expect(
+     marketplace.connect(poorBuyer).buyNFT(0)
+     ).to.be.revertedWith("Yetersiz bakiye");
+
+     await expect(
+     marketplace.connect(poorBuyer).buyNFT(0)
+     ).to.be.revertedWith("Yetersiz bakiye");
+     
+    });
+
+    it("NFTSold event emit edilmeli", async function () {
+      await expect(
+      marketplace.connect(buyer).buyNFT(0)
+      ).to.emit(marketplace, "NFTSold")
+      .withArgs(0, buyer.address, PRICE);
     });
 
   });
