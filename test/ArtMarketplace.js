@@ -119,11 +119,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
      await expect(
      marketplace.connect(poorBuyer).buyNFT(0)
      ).to.be.revertedWith("Yetersiz bakiye");
-
-     await expect(
-     marketplace.connect(poorBuyer).buyNFT(0)
-     ).to.be.revertedWith("Yetersiz bakiye");
-
+   
     });
 
     it("NFTSold event emit edilmeli", async function () {
@@ -136,7 +132,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
   });
 
 
-  describe("Listeleme iptal etme Testi", function () {
+  describe("CancelListing Testleri", function () {
   
     beforeEach(async function () {
      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
@@ -187,6 +183,15 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
       expect(listingAfter.price).to.equal(NEW_PRICE);
     });
 
+    it("satılmış NFT fiyatı güncellenemez", async function () {
+      await token.connect(buyer).approve(await marketplace.getAddress(), PRICE);
+      await marketplace.connect(buyer).buyNFT(0);
+  
+      await expect(
+      marketplace.connect(artist).updatePrice(0, NEW_PRICE)
+      ).to.be.revertedWith("Ilan aktif degil");
+    });
+
    
     it("satıcı olmayan fiyat güncelleyemez", async function () {
       await expect(
@@ -199,6 +204,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
          marketplace.connect(artist).updatePrice(0, 0)
       ).to.be.revertedWith("gecersiz fiyat");
     });
+
  });
 
 });
