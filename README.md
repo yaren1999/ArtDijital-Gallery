@@ -43,10 +43,23 @@ The ArtDigital ecosystem operates through a seamless integration of three smart 
 ## Smart Contracts
 
 ### ArtToken.sol
-ERC20 payment token (ART) used across the platform. Features minting, burning, and emergency pause.
+ERC20 payment token (ART) used across the platform. Supports owner-controlled minting, token burning, and emergency pause to protect the ecosystem.
+
+**Features:**
+- `mint` — Owner can mint new tokens
+- `burn` — Users can burn their own tokens
+- `pause / unpause` — Owner can pause all transfers in emergency
 
 ### ArtNFT.sol
-ERC721 NFT contract with URI storage, ERC2981 royalty standard, ERC721Enumerable for listing, and whitelist-based minting. Only approved artists can mint.
+ERC721 NFT contract built with multiple OpenZeppelin extensions for a complete digital art experience.
+
+**Features:**
+- `safeMint` — Only whitelisted artists or owner can mint
+- `addArtist / removeArtist` — Owner manages the artist whitelist
+- `burn` — NFT holders can burn their tokens
+- ERC2981 — Automatic royalty payments on every resale (%5)
+- ERC721Enumerable — Users can list and browse all NFTs
+- ERC721URIStorage — Each NFT linked to unique IPFS metadata
 
 **Supports secure ERC721Burnable mechanism allowing token holders to burn their NFTs safely.** Only approved artists can mint.
 
@@ -55,10 +68,19 @@ NFT trading platform with automatic royalty distribution. On every sale: artist 
 
 ## Test Coverage
 
+**Features:**
+- `listNFT` — List NFT with custom price
+- `buyNFT` — Purchase with automatic royalty + fee distribution  
+- `cancelListing` — Seller can cancel active listing
+- `updatePrice` — Seller can update listing price
+- `withdrawFees` — Owner withdraws accumulated fees 
+- `setFeePercent` — Owner can update platform fee (max 10%)
+
+## Test Coverage
 - ArtToken: 17 tests
-- ArtNFT: 15 tests
-- ArtMarketplace: 2 tests
-- **Total: 34 tests ** (%100 passing)
+- ArtNFT: 15 tests  
+- ArtMarketplace: 19 tests
+- **Total: 52 tests** (%100 passing)
 
 ## Installation
 
