@@ -213,5 +213,46 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
 
  });
+   
+  describe("Fee Yönetimi", function () {
+  
+  it("Owner komisyon oranını güncelleyebilmeli", async function () {
+    await marketplace.setFeePercent(5);
+    expect(await marketplace.marketplaceFeePercent()).to.equal(5);
+  });
+
+  it("Komisyon %10'dan fazla olamaz", async function () {
+    await expect(
+      marketplace.setFeePercent(11)
+    ).to.be.revertedWith("Komisyon cok yuksek");
+  });
+
+  it("Owner olmayan komisyon güncelleyemez", async function () {
+    await expect(
+      marketplace.connect(buyer).setFeePercent(5)
+    ).to.be.revertedWithCustomError(marketplace, "OwnableUnauthorizedAccount");
+  });
+
+  it("Owner biriken komisyonları çekebilmeli", async function () {
+    await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+    await marketplace.connect(artist).listNFT(0, PRICE);
+    await token.connect(buyer).approve(await marketplace.getAddress(), PRICE);
+    await marketplace.connect(buyer).buyNFT(0);
+
+    const ownerBefore = await token.balanceOf(owner.address);
+    await marketplace.withdrawFees();
+    const ownerAfter = await token.balanceOf(owner.address);
+
+    expect(ownerAfter).to.be.above(ownerBefore);
+  });
+
+  it("Owner olmayan komisyon çekemez", async function () {
+    await expect(
+      marketplace.connect(buyer).withdrawFees()
+    ).to.be.revertedWithCustomError(marketplace, "OwnableUnauthorizedAccount");
+  });
+
+  
+});
 
 });
