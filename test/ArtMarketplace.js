@@ -148,7 +148,7 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
 
 
-    it("Sadece satıcı listeyi silebilir", async function () {
+    it("Satıcı ilanını başarıyla iptal edebilmeli ve ilan pasif olmalı", async function () {
      await marketplace.connect(artist).cancelListing(0);
     
      const listing = await marketplace.listings(0);
@@ -157,13 +157,20 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
 
     it("Satıcı olmayan listeyi silemez", async function () {
   
-    await expect(
+      await expect(
       marketplace.connect(buyer).cancelListing(0)
     ).to.be.revertedWith("satici degilsin");
+   });
+
+   it("İlan iptal edildiğinde ListingCanceled emit edilmeli", async function () {
+    
+    await expect(
+    marketplace.connect(artist).cancelListing(0) 
+    ).to.emit(marketplace, "ListingCanceled")     
+    .withArgs(0, artist.address);                
   });
 
-  
- });
+  });
 
  describe("Fiyat güncelleme (update) testleri", function () {
     const NEW_PRICE = ethers.parseUnits("150", 18); 

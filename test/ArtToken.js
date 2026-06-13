@@ -115,6 +115,12 @@ describe("ArtToken", function () {
     });
 
     describe("5. Mint & Burn", function () {
+        it("Owner (Sahip) kendi kendine de para basabilmeli", async function () {
+           const miktar = ethers.parseEther("100"); 
+           await token.mint(owner.address, miktar); 
+           expect(await token.balanceOf(owner.address)).to.equal(INITIAL_SUPPLY + miktar);
+        });
+
         it("Sahip (Owner) yeni token üretebilmeli", async function () {
             const mintAmount = ethers.parseEther("500");
             await token.mint(addr1.address, mintAmount);
