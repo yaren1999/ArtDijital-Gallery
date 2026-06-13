@@ -5,8 +5,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract ArtMarketplace is Ownable {
+contract ArtMarketplace is Ownable, ReentrancyGuard {
     IERC20 public paymentToken;
     IERC721 public nftContract;
 
@@ -43,7 +44,7 @@ contract ArtMarketplace is Ownable {
         emit NFTListed(_tokenId, msg.sender, _price);
     }
 
-    function buyNFT(uint256 _tokenId) public {
+    function buyNFT(uint256 _tokenId) public nonReentrant {
         Listing storage listing = listings[_tokenId];
         require(listing.isActive, "Bu NFT satista degil");
         require(paymentToken.balanceOf(msg.sender) >= listing.price, "Yetersiz bakiye");
