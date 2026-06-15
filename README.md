@@ -20,6 +20,13 @@ Unlike basic NFT marketplaces, this project implements:
 
 All contracts verified on [Sepolia Etherscan](https://sepolia.etherscan.io).
 
+## Test Coverage
+- ArtToken: 17 tests
+- ArtNFT: 15 tests  
+- ArtMarketplace: 25 tests
+- **Total: 57 tests** (%100 passing)
+
+
 ## How It Works
 
 The ArtDigital ecosystem operates through a seamless integration of three smart contracts:
@@ -66,7 +73,6 @@ ERC721 NFT contract built with multiple OpenZeppelin extensions for a complete d
 ### ArtMarketplace.sol
 NFT trading platform with automatic royalty distribution. On every sale: artist receives royalty, platform takes 2% fee, seller gets the rest.
 
-## Test Coverage
 
 **Features:**
 - `listNFT` — List NFT with custom price
@@ -76,11 +82,6 @@ NFT trading platform with automatic royalty distribution. On every sale: artist 
 - `withdrawFees` — Owner withdraws accumulated fees 
 - `setFeePercent` — Owner can update platform fee (max 10%)
 
-## Test Coverage
-- ArtToken: 17 tests
-- ArtNFT: 15 tests  
-- ArtMarketplace: 19 tests
-- **Total: 52 tests** (%100 passing)
 
 ## Installation
 

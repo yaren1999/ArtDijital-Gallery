@@ -8,33 +8,60 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 
+
+
+/// @title Dijital Sanat Galerisi NFT Sözleşmesi
+/// @author Yaren Şef
+/// @notice Dijital sanat eserlerinin NFT olarak basılmasını, sanatçı whitelist yönetimini ve telif haklarını düzenler.
 contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, Ownable {
     uint256 private _nextTokenId;
+
+    /// @notice Hangi cüzdanların galeride NFT basmaya yetkili olduğunu tutan defter
     mapping(address => bool) public whitelistedArtists;
 
+
+    /// @notice NFT kontratını başlatır ve varsayılan telif hakkı oranını %5 olarak belirler
     constructor() ERC721("Art Digital Gallery", "ARTNFT") Ownable(msg.sender) {
         _setDefaultRoyalty(msg.sender, 500);
     }
 
+
+    /// @notice Bir sanatçıyı galeride NFT basabilmesi için whitelist'e ekler
+    /// @dev Sadece kontratın sahibi (Owner) tetikleyebilir
+    /// @param artist Whitelist'e alınacak sanatçının cüzdan adresi
     function addArtist(address artist) public onlyOwner {
         whitelistedArtists[artist] = true;
     }
 
+
+    /// @notice Bir sanatçının NFT basma yetkisini elinden alır
+    /// @dev Sadece kontratın sahibi (Owner) tetikleyebilir
+    /// @param artist Whitelist'ten çıkarılacak sanatçının cüzdan adresi
     function removeArtist(address artist) public onlyOwner {
        whitelistedArtists[artist] = false;
     }
 
+
+    /// @dev Fonksiyonu tetikleyen kişinin onaylı sanatçı veya dükkan sahibi olup olmadığını kontrol eden güvenlik kapısı
     modifier onlyArtist() {
         require(whitelistedArtists[msg.sender] || owner() == msg.sender, "Sadece onayli sanatcilar!");
         _;
     }
 
+
+
+    /// @notice Onaylı bir sanatçının galeride yeni bir sanat eseri (NFT) basmasını sağlar
+    /// @dev 'onlyArtist' modifier'ı sayesinde sadece whitelist'tekiler veya owner tetikleyebilir
+    /// @param to Basılan NFT'nin ilk olarak teslim edileceği cüzdan adresi
+    /// @param uri NFT'nin görselini ve metadata bilgilerini barındıran IPFS linki
     function safeMint(address to, string memory uri) public onlyArtist {
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
     }
 
+
+    /// @dev ERC721 ve ERC721Enumerable kütüphanelerinin transfer sıralamasını senkronize etmek için ezilen iç fonksiyon
     function _update(address to, uint256 tokenId, address auth)
         internal
         override(ERC721, ERC721Enumerable)
@@ -43,6 +70,8 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
         return super._update(to, tokenId, auth);
     }
 
+
+    /// @dev Cüzdanlardaki NFT sayım dengesini korumak için ezilen iç fonksiyon
     function _increaseBalance(address account, uint128 value)
         internal
         override(ERC721, ERC721Enumerable)
@@ -50,6 +79,9 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
         super._increaseBalance(account, value);
     }
 
+    /// @notice Bir NFT'nin internet üzerindeki metadata (özellik/resim) linkini döner
+    /// @param tokenId Linki sorgulanan NFT'nin benzersiz ID numarası
+    /// @return NFT'nin tam IPFS veya web adresi (string)
     function tokenURI(uint256 tokenId)
         public
         view
@@ -59,6 +91,7 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
         return super.tokenURI(tokenId);
     }
 
+    /// @dev Kontratın hangi standartları (ERC721, ERC2981 vb.) desteklediğini dış dünyaya bildiren fonksiyon
     function supportsInterface(bytes4 interfaceId)
         public
         view
