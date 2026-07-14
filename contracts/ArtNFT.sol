@@ -14,7 +14,9 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 /// @author Yaren Şef
 /// @notice Dijital sanat eserlerinin NFT olarak basılmasını, sanatçı whitelist yönetimini ve telif haklarını düzenler.
 contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, Ownable {
+
     uint256 private _nextTokenId;
+    uint256 public collectionCounter;
 
     struct Collection {
         uint256 id;          
@@ -28,10 +30,9 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
     }
 
     mapping(uint256 => Collection) public collections;
+    mapping(uint256 => uint256) public tokenCollection;
 
-    uint256 public collectionCounter;
-
-
+    
     /// @notice Hangi cüzdanların galeride NFT basmaya yetkili olduğunu tutan defter
     mapping(address => bool) public whitelistedArtists;
 
@@ -115,14 +116,32 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
        collection.isActive = false;
    }
 
+   
+   function safeMint(
+      address to, 
+      string memory uri,
+      uint256 collectionId
+    )public onlyArtist {
+     require(collectionId > 0 && collectionId <= collectionCounter, "Boyle bir koleksiyon yok!");
+     require(collections[collectionId].isActive, "Koleksiyon aktif degil!");
+     require(collections[collectionId].creator == msg.sender, "Bu koleksiyonun sahibi siz degilsiniz!");
+
+    
+      uint256 tokenId = _nextTokenId++;
+      _safeMint(to, tokenId);
+      _setTokenURI(tokenId, uri);
+
+    
+      tokenCollection[tokenId] = collectionId;
+      collections[collectionId].nftCount++;
+    }
+
 
     /// @dev Fonksiyonu tetikleyen kişinin onaylı sanatçı veya dükkan sahibi olup olmadığını kontrol eden güvenlik kapısı
     modifier onlyArtist() {
         require(whitelistedArtists[msg.sender] || owner() == msg.sender, "Sadece onayli sanatcilar!");
         _;
     }
-
-
 
     /// @notice Onaylı bir sanatçının galeride yeni bir sanat eseri (NFT) basmasını sağlar
     /// @dev 'onlyArtist' modifier'ı sayesinde sadece whitelist'tekiler veya owner tetikleyebilir
@@ -133,7 +152,6 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
     }
-
 
     /// @dev ERC721 ve ERC721Enumerable kütüphanelerinin transfer sıralamasını senkronize etmek için ezilen iç fonksiyon
     function _update(address to, uint256 tokenId, address auth)

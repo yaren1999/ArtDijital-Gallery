@@ -279,7 +279,7 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
  describe("8. deactivateCollection", function () {
     
     beforeEach(async function () {
-      
+
        await artNft.connect(owner).addArtist(artist.address);
         await artNft.connect(artist).createCollection(
             "Ancient Gods", "Açıklama", "ipfs://cover"
@@ -310,6 +310,56 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
             artNft.connect(artist).deactivateCollection(1)
         ).to.be.revertedWith("Zaten pasif");
     });
+ });
+
+ describe("10. NFT and Collection Relationship (safeMint)", function () {
+   beforeEach(async function () {
+      await artNft.connect(owner).addArtist(artist.address);
+    
+      await artNft.connect(artist).createCollection(
+      "Ancient Gods", "Greek mythology collection", "ipfs://cover"
+     );
+
+    });
+
+  
+    it("1. Sanatçı kendi collection'ına mint yapabilmeli", async function () {
+      await artNft.connect(artist)["safeMint(address,string,uint256)"](artist.address, "ipfs://...", 1);
+
+      expect(await artNft.ownerOf(0)).to.equal(artist.address);
+      expect(await artNft.tokenCollection(0)).to.equal(1);
+
+      const collection = await artNft.getCollection(1);
+      expect(collection.nftCount).to.equal(1);
+    });
+
+  
+   it("2. Başka sanatçının collection'ına mint yapamamalı", async function () {
+     await artNft.connect(owner).addArtist(user.address);
+    
+     await expect(
+       artNft.connect(user)["safeMint(address,string,uint256)"](user.address, "ipfs://...", 1)
+     ).to.be.revertedWith("Bu koleksiyonun sahibi siz degilsiniz!");
+   });
+
+  
+   it("3. Pasif collection'a mint yapamamalı", async function () {
+     await artNft.connect(artist).deactivateCollection(1);
+    
+     await expect(
+        artNft.connect(artist)["safeMint(address,string,uint256)"](artist.address, "ipfs://...", 1)
+     ).to.be.revertedWith("Koleksiyon aktif degil!");
+
+    });
+
+    it("4. Geçersiz collectionId ile mint yapamamalı", async function () {
+
+     await expect(
+        artNft.connect(artist)["safeMint(address,string,uint256)"](artist.address, "ipfs://...", 999)
+     ).to.be.revertedWith("Boyle bir koleksiyon yok!");
+   });
+
+
  });
 
 });
