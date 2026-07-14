@@ -121,7 +121,7 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
 
   });
 
-  describe("6. Collectin sistemleri testleri", function () {
+  describe("6. createCollection sistemleri testleri", function () {
     beforeEach(async function () {
       await artNft.connect(owner).addArtist(artist.address);
     });
@@ -129,13 +129,13 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
     it("Sanatçı koleksiyon oluşturabilmeli", async function () {
      await artNft.connect(artist).createCollection(
         "Ancient Gods: Mount Olympus", 
-        "Olimpos kahramanları için efsanevi kılıçlar, zırhlar, karakterler ve özel skinler.", 
+        "A mythological digital collection featuring legendary heroes, weapons, armor, artifacts and collectible characters inspired by Ancient Greek mythology.", 
         "ipfs://mount-olympus-cover" 
       );
                 
       const collection = await artNft.collections(1);
      expect(collection.name).to.equal("Ancient Gods: Mount Olympus");
-     expect(collection.description).to.equal("Olimpos kahramanları için efsanevi kılıçlar, zırhlar, karakterler ve özel skinler.");
+     expect(collection.description).to.equal("A mythological digital collection featuring legendary heroes, weapons, armor, artifacts and collectible characters inspired by Ancient Greek mythology.");
      expect(collection.coverURI).to.equal("ipfs://mount-olympus-cover");
      expect(collection.creator).to.equal(artist.address);
      expect(collection.isActive).to.be.true;
@@ -196,5 +196,120 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
     });
 
   });
+
+  describe("7. getCollection", function () {
+    
+    beforeEach(async function () {
+        await artNft.connect(owner).addArtist(artist.address);
+
+        await artNft.connect(artist).createCollection(
+            "Ancient Gods", "Açıklama", "ipfs://cover"
+        );
+    });
+
+    it("Doğru koleksiyonu döndürmeli", async function () {
+        const collection = await artNft.getCollection(1);
+        expect(collection.name).to.equal("Ancient Gods");
+        expect(collection.creator).to.equal(artist.address);
+    });
+
+    it("Geçersiz ID reddedilmeli", async function () {
+        await expect(
+            artNft.getCollection(99)
+        ).to.be.revertedWith("Gecersiz ID");
+    });
+
+    it("ID = 0 reddedilmeli", async function () {
+        await expect(
+            artNft.getCollection(0)
+        ).to.be.revertedWith("Gecersiz ID");
+    });
+ });
+
+ describe("7. updateCollection", function () {
+    
+    beforeEach(async function () {
+        await artNft.connect(owner).addArtist(artist.address);
+
+        await artNft.connect(artist).createCollection(
+            "Eski İsim", "Eski Açıklama", "ipfs://eski"
+        );
+    });
+
+    it("Yaratıcı güncelleyebilmeli", async function () {
+
+        await artNft.connect(artist).updateCollection(
+            1, "Yeni İsim", "Yeni Açıklama", "ipfs://yeni"
+        );
+
+        const collection = await artNft.getCollection(1);
+        expect(collection.name).to.equal("Yeni İsim");
+        expect(collection.description).to.equal("Yeni Açıklama");
+        expect(collection.coverURI).to.equal("ipfs://yeni");
+    });
+
+    it("Başkası güncelleyememeli", async function () {
+        await expect(
+            artNft.connect(stranger).updateCollection(
+                1, "Yeni İsim", "Yeni Açıklama", "ipfs://yeni"
+            )
+        ).to.be.revertedWith("Sadece yaratici guncelleyebilir");
+    });
+
+    it("Pasif koleksiyon güncellenememeli", async function () {
+        await artNft.connect(artist).deactivateCollection(1);
+
+        await expect(
+            artNft.connect(artist).updateCollection(
+                1, "Yeni İsim", "Yeni Açıklama", "ipfs://yeni"
+            )
+        ).to.be.revertedWith("Koleksiyon aktif degil");
+    });
+
+    it("Boş isimle güncellenememeli", async function () {
+
+        await expect(
+            artNft.connect(artist).updateCollection(
+                1, "", "Yeni Açıklama", "ipfs://yeni"
+            )
+        ).to.be.revertedWith("Isim gerekli");
+    });
+ });
+
+ describe("8. deactivateCollection", function () {
+    
+    beforeEach(async function () {
+      
+       await artNft.connect(owner).addArtist(artist.address);
+        await artNft.connect(artist).createCollection(
+            "Ancient Gods", "Açıklama", "ipfs://cover"
+        );
+    });
+
+    it("Yaratıcı pasifleştirebilmeli", async function () {
+        await artNft.connect(artist).deactivateCollection(1);
+        const collection = await artNft.getCollection(1);
+        expect(collection.isActive).to.be.false;
+    });
+
+    it("Owner da pasifleştirebilmeli", async function () {
+        await artNft.connect(owner).deactivateCollection(1);
+        const collection = await artNft.getCollection(1);
+        expect(collection.isActive).to.be.false;
+    });
+
+    it("Başkası pasifleştiremez", async function () {
+        await expect(
+            artNft.connect(stranger).deactivateCollection(1)
+        ).to.be.revertedWith("Yetkiniz yok");
+    });
+
+    it("Zaten pasif koleksiyon tekrar pasifleştirilemez", async function () {
+        await artNft.connect(artist).deactivateCollection(1);
+        await expect(
+            artNft.connect(artist).deactivateCollection(1)
+        ).to.be.revertedWith("Zaten pasif");
+    });
+ });
 
 });
