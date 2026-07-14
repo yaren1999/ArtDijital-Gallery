@@ -2,13 +2,13 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("ArtToken", function () {
-    let token, owner, addr1, addr2;
+    let artToken,Token, owner, addr1, addr2;
     const INITIAL_SUPPLY = ethers.parseEther("1000000");
 
     beforeEach(async function () {
         [owner, addr1, addr2] = await ethers.getSigners();
-        const TokenFactory = await ethers.getContractFactory("ArtToken");
-        token = await TokenFactory.deploy(INITIAL_SUPPLY);
+        const Token = await ethers.getContractFactory("ArtToken");
+        token = await Token.deploy(INITIAL_SUPPLY);
     });
 
     describe("1. Deploy Doğru çalışıyor mu", function () {
@@ -36,7 +36,7 @@ describe("ArtToken", function () {
         it("Sıfır (0x0) adresine transfer yapamamalı", async function () {
             await expect(
                 token.transfer(ethers.ZeroAddress, 100)
-            ).to.be.reverted;
+            ).to.be.revertedWithCustomError(token, "ERC20InvalidReceiver");
         });
 
         it("Yetersiz bakiyede transfer başarısız olmalı", async function () {

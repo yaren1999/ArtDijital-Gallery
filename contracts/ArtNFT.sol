@@ -16,6 +16,22 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, Ownable {
     uint256 private _nextTokenId;
 
+    struct Collection {
+        uint256 id;          
+        string name;         
+        string description;  
+        string coverURI;     
+        address creator;     
+        uint256 createdAt;   
+        uint256 nftCount;    
+        bool isActive;       
+    }
+
+    mapping(uint256 => Collection) public collections;
+
+    uint256 public collectionCounter;
+
+
     /// @notice Hangi cüzdanların galeride NFT basmaya yetkili olduğunu tutan defter
     mapping(address => bool) public whitelistedArtists;
 
@@ -39,6 +55,30 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
     /// @param artist Whitelist'ten çıkarılacak sanatçının cüzdan adresi
     function removeArtist(address artist) public onlyOwner {
        whitelistedArtists[artist] = false;
+    }
+
+    function createCollection(
+        string memory _name,
+        string memory _description,
+        string memory _coverURI
+    ) public onlyArtist {
+        
+        require(bytes(_name).length > 0, "isim gerekli");
+        require(bytes(_description).length > 0, "Aciklama gerekli");
+        require(bytes(_coverURI).length > 0, "Kapak gorseli gerekli");
+
+        collectionCounter++;
+
+        collections[collectionCounter] = Collection({
+            id: collectionCounter,
+            name: _name,
+            description: _description,
+            coverURI: _coverURI,
+            creator: msg.sender,
+            createdAt: block.timestamp,
+            nftCount: 0,
+            isActive: true
+        });
     }
 
 

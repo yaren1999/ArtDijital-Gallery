@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 
 
 /// @title Galerinin Yerel Yönetim ve Ödeme Tokenı (Art Token)
-/// @author Yaren Şef
+/// @author Yaren 
 /// @notice Pazar yerindeki sanat eserlerini satın almak ve galeri ekosisteminde ödemeler yapmak için kullanılır.
 contract ArtToken is ERC20, Ownable, ERC20Burnable, Pausable {
 

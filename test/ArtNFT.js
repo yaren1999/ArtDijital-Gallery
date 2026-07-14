@@ -121,4 +121,80 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
 
   });
 
+  describe("6. Collectin sistemleri testleri", function () {
+    beforeEach(async function () {
+      await artNft.connect(owner).addArtist(artist.address);
+    });
+
+    it("Sanatçı koleksiyon oluşturabilmeli", async function () {
+     await artNft.connect(artist).createCollection(
+        "Ancient Gods: Mount Olympus", 
+        "Olimpos kahramanları için efsanevi kılıçlar, zırhlar, karakterler ve özel skinler.", 
+        "ipfs://mount-olympus-cover" 
+      );
+                
+      const collection = await artNft.collections(1);
+     expect(collection.name).to.equal("Ancient Gods: Mount Olympus");
+     expect(collection.description).to.equal("Olimpos kahramanları için efsanevi kılıçlar, zırhlar, karakterler ve özel skinler.");
+     expect(collection.coverURI).to.equal("ipfs://mount-olympus-cover");
+     expect(collection.creator).to.equal(artist.address);
+     expect(collection.isActive).to.be.true;
+     expect(collection.nftCount).to.equal(0);
+
+    });
+
+    it("Collection ID otomatik artmalı", async function () {
+     await artNft.connect(artist).createCollection("Koleksiyon 1", "Açıklama 1", "ipfs://1");
+     await artNft.connect(artist).createCollection("Koleksiyon 2", "Açıklama 2", "ipfs://2");
+            
+     const col1 = await artNft.collections(1);
+     const col2 = await artNft.collections(2);
+            
+     expect(col1.id).to.equal(1);
+     expect(col2.id).to.equal(2);
+    });
+
+    it("createdAt block.timestamp ile doldurulmalı", async function () {
+     await artNft.connect(artist).createCollection("Test", "Açıklama", "ipfs://test");
+     const collection = await artNft.collections(1);
+     expect(collection.createdAt).to.be.above(0);
+    });
+
+        
+    it("Boş isim reddedilmeli", async function () {
+     await expect(
+     artNft.connect(artist).createCollection("", "Açıklama", "ipfs://cover")
+     ).to.be.revertedWith("isim gerekli");
+   });
+
+    it("Boş açıklama reddedilmeli", async function () {
+      await expect(
+      artNft.connect(artist).createCollection("İsim", "", "ipfs://cover")
+      ).to.be.revertedWith("Aciklama gerekli");
+    });
+
+    it("Boş coverURI reddedilmeli", async function () {
+      await expect(
+      artNft.connect(artist).createCollection("İsim", "Acıklama", "")
+      ).to.be.revertedWith("Kapak gorseli gerekli");
+    });
+
+   it("Whitelist'te olmayan oluşturamamalı", async function () {
+     await expect(
+     artNft.connect(stranger).createCollection("İsim", "Acıklama", "ipfs://cover")
+     ).to.be.revertedWith("Sadece onayli sanatcilar!");
+   });
+
+   it("collectionCounter doğru artmalı", async function () {
+     expect(await artNft.collectionCounter()).to.equal(0);
+            
+      await artNft.connect(artist).createCollection("Test", "Acıklama", "ipfs://test");
+      expect(await artNft.collectionCounter()).to.equal(1);
+            
+      await artNft.connect(artist).createCollection("Test2", "Acıklama2", "ipfs://test2");
+      expect(await artNft.collectionCounter()).to.equal(2);
+    });
+
+  });
+
 });
