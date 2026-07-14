@@ -136,6 +136,20 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
       collections[collectionId].nftCount++;
     }
 
+    function batchMint(
+      address to,
+      string[] memory uris,
+      uint256 collectionId
+    ) public onlyArtist {
+
+      require(uris.length > 0, "En az bir URI girmelisiniz!");
+      require(uris.length <= 20, "Tek seferde en fazla 20 NFT basabilirsiniz!");
+
+     for (uint256 i = 0; i < uris.length; i++) {
+        safeMint(to, uris[i], collectionId);
+     }
+    }
+
 
     /// @dev Fonksiyonu tetikleyen kişinin onaylı sanatçı veya dükkan sahibi olup olmadığını kontrol eden güvenlik kapısı
     modifier onlyArtist() {

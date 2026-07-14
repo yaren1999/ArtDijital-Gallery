@@ -359,7 +359,75 @@ describe("ArtNFT Kapsamlı Test Süreci", function () {
      ).to.be.revertedWith("Boyle bir koleksiyon yok!");
    });
 
+  });
 
+  describe("11.  batchMint - tests", function () {
+     let collectionId = 1; 
+
+    beforeEach(async function () {
+      await artNft.connect(owner).addArtist(artist.address);
+
+    const tx = await artNft.connect(artist).createCollection(
+      "Ancient Gods",
+      "AGOD",
+      "Mythology collection"
+      );
+     await tx.wait();
+
+     collectionId = await artNft.collectionCounter();
+    });
+
+   it("1. Sanatçı kendi aktif koleksiyonuna başarıyla çoklu NFT basabilmeli (Başarı Senaryosu)", async function () {
+    const uris = [
+      "ipfs://zeus",
+      "ipfs://poseidon",
+      "ipfs://hades"
+    ];
+
+    const oncekiKoleksiyon = await artNft.collections(collectionId);
+    const oncekiNftSayisi = oncekiKoleksiyon.nftCount;
+
+    await artNft.connect(artist).batchMint(artist.address, uris, collectionId);
+
+    const sonrakiKoleksiyon = await artNft.collections(collectionId);
+    const sonrakiNftSayisi = sonrakiKoleksiyon.nftCount;
+
+    expect(sonrakiNftSayisi).to.equal(oncekiNftSayisi + 3n);
+   });
+
+   it("2. Boş bir URI listesiyle çağrıldığında hata fırlatmalı (batchMint kontrolü)", async function () {
+    const bosUris = [];
+
+    await expect(
+      artNft.connect(artist).batchMint(artist.address, bosUris, collectionId)
+    ).to.be.revertedWith("En az bir URI girmelisiniz!");
+   });
+
+   it("3. Tek seferde 20'den fazla NFT basılmak istendiğinde hata fırlatmalı (batchMint kontrolü)", async function () {
+    const cokluUris = Array(21).fill("ipfs://test-nft");
+
+    await expect(
+      artNft.connect(artist).batchMint(artist.address, cokluUris, collectionId)
+    ).to.be.revertedWith("Tek seferde en fazla 20 NFT basabilirsiniz!");
+   });
+
+   it("4. Başka sanatçının koleksiyonuna basım yapmaya çalışınca hata fırlatmalı (safeMint'e devredilen kontrol)", async function () {
+    const uris = ["ipfs://test1", "ipfs://test2"];
+
+    await artNft.connect(owner).addArtist(user.address);
+
+    await expect(
+      artNft.connect(user).batchMint(user.address, uris, collectionId)
+    ).to.be.revertedWith("Bu koleksiyonun sahibi siz degilsiniz!");
+   });
+
+   it("5. Olmayan bir koleksiyona basım yapmaya çalışınca hata fırlatmalı (safeMint'e devredilen kontrol)", async function () {
+     const uris = ["ipfs://test1"];
+
+     await expect(
+       artNft.connect(artist).batchMint(artist.address, uris, 300)
+     ).to.be.revertedWith("Boyle bir koleksiyon yok!");
+   });
  });
 
 });
