@@ -27,13 +27,25 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
         bool isActive;
     }
 
+    struct Offer {
+      address buyer;
+      uint256 amount;
+      uint256 createdAt;
+      bool isActive;
+    }
+
     /// @notice NFT ID'lerini pazar yeri ilanlarına bağlayan ana defter
     mapping(uint256 => Listing) public listings;
+
+    mapping(uint256 => Offer[]) public offers;
 
     event NFTListed(uint256 indexed tokenId, address indexed seller, uint256 price);
     event NFTSold(uint256 indexed tokenId, address indexed buyer, uint256 price);
     event ListingCanceled(uint256 indexed tokenId, address indexed seller);
     event PriceUpdated(uint256 indexed tokenId , uint256 indexed newPrice);
+
+    event OfferCreated(uint256 indexed tokenId, address indexed buyer, uint256 amount);
+    
 
 
     /// @notice Pazar yeri kontratını ödeme tokenı ve NFT galerisi adresleriyle başlatır
@@ -120,7 +132,27 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
 
       listing.price = newPrice;  
     
-      emit PriceUpdated(tokenId, newPrice);
+      emit PriceUpdated(tokenId, newPrice
+      );
+    }
+
+    function makeOffer(uint256 tokenId, uint256 amount) public {
+      require(amount > 0, "Teklif sifirdan buyuk olmali");
+      require(nftContract.ownerOf(tokenId) != msg.sender, "Kendi NFT'nize teklif veremezsiniz");
+      require(paymentToken.balanceOf(msg.sender) >= amount, "Yetersiz bakiye");
+
+      require(paymentToken.allowance(msg.sender, address(this)) >= amount,"Kontrata harcama izni (allowance) vermediniz!");
+
+    offers[tokenId].push(
+        Offer({
+            buyer: msg.sender,
+            amount: amount,
+            createdAt: block.timestamp,
+            isActive: true
+        })
+    );
+
+      emit OfferCreated(tokenId, msg.sender, amount);
     }
 
 

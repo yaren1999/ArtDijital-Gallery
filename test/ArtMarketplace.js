@@ -253,6 +253,93 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
   });
 
   
+ });
+
+  describe("Offer System (makeOffer)", function () {
+  const OFFER_AMOUNT = ethers.parseUnits("50", 18);
+
+  beforeEach(async function () {
+    await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+    await marketplace.connect(artist).listNFT(0, PRICE);
+
+    await token.connect(buyer).approve(await marketplace.getAddress(), OFFER_AMOUNT);
+  });
+
+  it("Teklif oluşturabilmeli", async function () {
+    await marketplace.connect(buyer).makeOffer(0, OFFER_AMOUNT);
+
+    const offer = await marketplace.offers(0, 0);
+
+    expect(offer.buyer).to.equal(buyer.address);
+    expect(offer.amount).to.equal(OFFER_AMOUNT);
+    expect(offer.isActive).to.equal(true);
+  });
+
+  it("Teklif 0 olamaz", async function () {
+    await expect(
+      marketplace.connect(buyer).makeOffer(0, 0)
+    ).to.be.revertedWith("Teklif sifirdan buyuk olmali");
+  });
+
+  it("Kendi NFT'sine teklif veremez", async function () {
+    await token.transfer(artist.address, OFFER_AMOUNT);
+    await token.connect(artist).approve(await marketplace.getAddress(), OFFER_AMOUNT);
+
+    await expect(
+      marketplace.connect(artist).makeOffer(0, OFFER_AMOUNT)
+    ).to.be.revertedWith("Kendi NFT'nize teklif veremezsiniz");
+  });
+
+  it("Yetersiz bakiye ile teklif verilemez", async function () {
+    const [, , , poorBuyer] = await ethers.getSigners();
+
+    await expect(
+      marketplace.connect(poorBuyer).makeOffer(0, OFFER_AMOUNT)
+    ).to.be.revertedWith("Yetersiz bakiye");
+  });
+
+  it("Yetersiz harcama izni (allowance) ile teklif verilemez", async function () {
+    const [, , , userWithoutAllowance] = await ethers.getSigners();
+
+    await token.transfer(userWithoutAllowance.address, OFFER_AMOUNT);
+    await token.connect(userWithoutAllowance).approve(await marketplace.getAddress(), 0);
+
+    await expect(
+      marketplace.connect(userWithoutAllowance).makeOffer(0, OFFER_AMOUNT)
+    ).to.be.revertedWith("Kontrata harcama izni (allowance) vermediniz!");
+  });
+
+  it("createdAt doğru oluşmalı", async function () {
+    await marketplace.connect(buyer).makeOffer(0, OFFER_AMOUNT);
+
+    const offer = await marketplace.offers(0, 0);
+
+    expect(offer.createdAt).to.be.gt(0);
+  });
+
+  it("isActive true başlamalı", async function () {
+    await marketplace.connect(buyer).makeOffer(0, OFFER_AMOUNT);
+
+    const offer = await marketplace.offers(0, 0);
+
+    expect(offer.isActive).to.equal(true);
+  });
+
+  it("Aynı NFT'ye birden fazla teklif verilebilmeli", async function () {
+    const [, , , user2] = await ethers.getSigners();
+
+    await token.transfer(user2.address, ethers.parseUnits("100", 18));
+    await token.connect(user2).approve(await marketplace.getAddress(), OFFER_AMOUNT);
+
+    await marketplace.connect(buyer).makeOffer(0, OFFER_AMOUNT);
+    await marketplace.connect(user2).makeOffer(0, OFFER_AMOUNT);
+
+    const offer1 = await marketplace.offers(0, 0);
+    const offer2 = await marketplace.offers(0, 1);
+
+    expect(offer1.buyer).to.equal(buyer.address);
+    expect(offer2.buyer).to.equal(user2.address);
+  });
 });
 
 });
