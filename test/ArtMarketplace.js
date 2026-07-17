@@ -3,11 +3,11 @@ const { ethers } = require("hardhat");
 
 describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
   let ArtToken, token, ArtNFT, nft, Marketplace, marketplace;
-  let owner, artist, buyer;
+  let owner, artist, buyer ,stranger; 
   const PRICE = ethers.parseUnits("100", 18); 
 
   beforeEach(async function () {
-    [owner, artist, buyer] = await ethers.getSigners();
+    [owner, artist, buyer, stranger] = await ethers.getSigners();
 
     ArtToken = await ethers.getContractFactory("ArtToken");
     token = await ArtToken.deploy(ethers.parseUnits("1000000", 18)); 
@@ -340,6 +340,53 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     expect(offer1.buyer).to.equal(buyer.address);
     expect(offer2.buyer).to.equal(user2.address);
   });
-});
+ });
+
+  describe("cancelOffer Testleri", function() {
+
+   
+
+    beforeEach (async function () {
+        await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+        await marketplace.connect(artist).listNFT(0, PRICE);
+        await token.connect(buyer).approve(await marketplace.getAddress() , PRICE);
+        await marketplace.connect(buyer).makeOffer(0, PRICE);
+
+    });
+
+     
+    it("yabancı birisi iptal edememeli", async function () {
+      await expect(
+        marketplace.connect(stranger).cancelOffer(0,0)
+      ).to.be.revertedWith("Bu teklif size ait degil!");
+    });
+
+    it("Bu teklif , size ait degil", async function () {
+       await expect(
+       marketplace.connect(stranger).cancelOffer(0,0)
+      ).to.be.revertedWith("Bu teklif size ait degil!")
+    });
+
+    it("teklif sahibi iptal edebilmeli", async function () {
+      await marketplace.connect(buyer).cancelOffer(0,0);
+      const offer = await marketplace.offers(0,0);
+      expect(offer.isActive).to.equal(false);
+    });
+
+    it("Gecersiz teklif", async function () {
+       await expect(
+        marketplace.connect(buyer).cancelOffer(0,1)
+      ).to.be.revertedWith("Gecersiz teklif!");
+    });
+
+    it("2 kere iptal edemez", async function () {
+      await marketplace.connect(buyer).cancelOffer(0,0);
+  
+      await expect(
+        marketplace.connect(buyer).cancelOffer(0,0)
+      ).to.be.revertedWith("Teklif aktif degil!");
+    });
+
+  });
 
 });

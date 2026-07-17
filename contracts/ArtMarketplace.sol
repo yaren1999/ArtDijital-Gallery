@@ -45,6 +45,7 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
     event PriceUpdated(uint256 indexed tokenId , uint256 indexed newPrice);
 
     event OfferCreated(uint256 indexed tokenId, address indexed buyer, uint256 amount);
+    event OfferCanceled(uint256 indexed tokenId, uint256 indexed offerIndex, address indexed buyer);
     
 
 
@@ -154,6 +155,19 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
 
       emit OfferCreated(tokenId, msg.sender, amount);
     }
+
+    function cancelOffer(uint256 tokenId, uint256 offerIndex) public {
+      require(offerIndex < offers[tokenId].length, "Gecersiz teklif!");
+
+      Offer storage offer = offers[tokenId][offerIndex];
+
+      require(offer.isActive, "Teklif aktif degil!");
+      require(offer.buyer == msg.sender, "Bu teklif size ait degil!");
+
+      offer.isActive = false;
+
+      emit OfferCanceled(tokenId, offerIndex, msg.sender);
+    }  
 
 
     /// @notice Kontrat içinde biriken pazar yeri komisyon ücretlerini dükkan sahibinin cüzdanına çeker
