@@ -344,8 +344,6 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
 
   describe("cancelOffer Testleri", function() {
 
-   
-
     beforeEach (async function () {
         await nft.connect(artist).approve(await marketplace.getAddress(), 0);
         await marketplace.connect(artist).listNFT(0, PRICE);
@@ -388,5 +386,48 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
 
   });
+
+  describe("acceptOffer Testleri", function () {
+
+   beforeEach(async function () {
+    await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+    await marketplace.connect(artist).listNFT(0, PRICE);
+    await token.connect(buyer).approve(await marketplace.getAddress(), PRICE);
+    await marketplace.connect(buyer).makeOffer(0,PRICE);
+   });
+
+   it("2 KERE TEKLİFİ KABUL EDEMEZSİNİZ!", async function(){
+    await marketplace.connect(artist).acceptOffer(0,0);
+    await expect(
+      marketplace.connect(artist).acceptOffer(0,0)
+    ).to.be.revertedWith("Teklif aktif degil!");
+   });
+
+   it("NFT sahibi teklifi kabul edebilmeli", async function() {
+    await marketplace.connect(artist).acceptOffer(0,0);
+    const acceptOffer = await marketplace.offers(0,0);
+    expect(acceptOffer.isActive).to.equal(false);
+   });
+
+   it("NFT Sahibi olmayan teklifi kabul edememeli!", async function () {
+     await expect(
+      marketplace.connect(stranger).acceptOffer(0,0)
+     ).to.be.revertedWith("Sadece NFT sahibi kabul edebilir!")
+   });
+
+   it("NFT sahibi olmayan teklifi kabul edemez!",async function () {
+    await expect(
+      marketplace.connect(artist).acceptOffer(0 , 999)
+    ).to.be.revertedWith("Gecersiz teklif!");
+   });
+
+   it("Kabul sonrası NFT alıcıya geçmeli", async function () {
+     await marketplace.connect(artist).acceptOffer(0,0);
+
+      expect(
+         await nft.ownerOf(0)
+      ).to.equal(await buyer.getAddress());
+   });
+ });
 
 });

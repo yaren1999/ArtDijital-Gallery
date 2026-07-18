@@ -46,6 +46,7 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
 
     event OfferCreated(uint256 indexed tokenId, address indexed buyer, uint256 amount);
     event OfferCanceled(uint256 indexed tokenId, uint256 indexed offerIndex, address indexed buyer);
+    event OfferAccepted(  uint256 indexed tokenId, uint256 indexed offerIndex, address indexed buyer,address seller,uint256 amount);
     
 
 
@@ -168,6 +169,35 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
 
       emit OfferCanceled(tokenId, offerIndex, msg.sender);
     }  
+
+    function acceptOffer(uint256 tokenId, uint256 offerIndex) public nonReentrant {
+       require(offerIndex < offers[tokenId].length, "Gecersiz teklif!");
+
+       Offer storage offer = offers[tokenId][offerIndex];
+       require(offer.isActive, "Teklif aktif degil!");
+       require(nftContract.ownerOf(tokenId) == msg.sender, "Sadece NFT sahibi kabul edebilir!");
+    
+      (address royaltyReceiver , uint256 royaltyAmount) =
+      IERC2981(address(nftContract)).royaltyInfo(tokenId, offer.amount);
+
+      uint256 fee = (offer.amount * marketplaceFeePercent) / 100;
+      uint256 sellerAmount = offer.amount - fee - royaltyAmount;
+
+
+      offer.isActive = false;
+      listings[tokenId].isActive = false;
+
+      for(uint256 i = 0; i < offers[tokenId].length; i++) {
+        offers[tokenId][i].isActive = false;
+       }
+
+      paymentToken.transferFrom(offer.buyer, address(this), offer.amount);
+      paymentToken.transfer(msg.sender, sellerAmount);  
+      paymentToken.transfer(royaltyReceiver, royaltyAmount);
+      nftContract.safeTransferFrom(listings[tokenId].seller, offer.buyer, tokenId);
+
+      emit OfferAccepted(tokenId, offerIndex, offer.buyer, msg.sender, offer.amount);
+    }
 
 
     /// @notice Kontrat içinde biriken pazar yeri komisyon ücretlerini dükkan sahibinin cüzdanına çeker
