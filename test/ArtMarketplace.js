@@ -415,9 +415,9 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
      ).to.be.revertedWith("Sadece NFT sahibi kabul edebilir!")
    });
 
-   it("NFT sahibi olmayan teklifi kabul edemez!",async function () {
+   it("Geçersiz teklif kabul edilemez!",async function () {
     await expect(
-      marketplace.connect(artist).acceptOffer(0 , 999)
+      marketplace.connect(stranger).acceptOffer(0 , 999)
     ).to.be.revertedWith("Gecersiz teklif!");
    });
 
@@ -429,5 +429,45 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
       ).to.equal(await buyer.getAddress());
    });
  });
+
+   describe("createAuction Testleri", async function () {
+    const accept_NFT = ethers.parseUnits("50", 18);
+
+   it("NFT sahibi olmayan açık arttırmaya koyamamalı", async function () {
+    await expect(marketplace.connect(stranger).createAuction(0, 50, 86400)
+     ).to.be.revertedWith("NFT size ait degil!");
+   });
+
+   it("minimum  teklif sifirdan büyük olmalı", async function() {
+     await expect(
+      marketplace.connect(artist).createAuction(0, 0, 86400)
+     ).to.be.revertedWith( "Minimum teklif sifirdan buyuk olmali");
+   });
+
+  it("Verilen süre sifirdan büyük olmalı", async function () {
+      await expect(
+        marketplace.connect(artist).createAuction(0, 50, 0)
+    ).to.be.revertedWith("Sure sifirdan buyuk olmali");
+  });
+
+   it("Aynı NFT başka yerde açık arttırmada olamaz!", async function() {
+      await marketplace.connect(artist).createAuction(0, 50, 86400);
+
+      await expect(marketplace.connect(artist).createAuction(0, 50, 86400)
+    ).to.be.revertedWith("Zaten aktif auction var!");
+   });
+
+   it("Açık arttırma oluşturabilmeli", async function () {
+      await marketplace.connect(artist).createAuction(0, 50, 86400);
+
+      const auction = await marketplace.auctions(0);
+
+      expect(auction.tokenId).to.equal(0);
+      expect(auction.seller).to.equal(await artist.getAddress());
+      expect(auction.minBid).to.equal(50);
+      expect(auction.isActive).to.equal(true);
+   });
+
+  });  
 
 });

@@ -34,10 +34,21 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
       bool isActive;
     }
 
+    struct Auction {
+      uint256 tokenId;
+      address seller;
+      uint256 minBid;
+      uint256 highestBid;
+      address highestBidder;
+      uint256 endTime;
+      bool isActive;
+    }
+
     /// @notice NFT ID'lerini pazar yeri ilanlarına bağlayan ana defter
     mapping(uint256 => Listing) public listings;
 
     mapping(uint256 => Offer[]) public offers;
+    mapping(uint256 => Auction) public auctions;
 
     event NFTListed(uint256 indexed tokenId, address indexed seller, uint256 price);
     event NFTSold(uint256 indexed tokenId, address indexed buyer, uint256 price);
@@ -47,7 +58,7 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
     event OfferCreated(uint256 indexed tokenId, address indexed buyer, uint256 amount);
     event OfferCanceled(uint256 indexed tokenId, uint256 indexed offerIndex, address indexed buyer);
     event OfferAccepted(  uint256 indexed tokenId, uint256 indexed offerIndex, address indexed buyer,address seller,uint256 amount);
-    
+    event AuctionCreated(uint256 indexed tokenId, address indexed seller,uint256 minBid, uint256 endTime);
 
 
     /// @notice Pazar yeri kontratını ödeme tokenı ve NFT galerisi adresleriyle başlatır
@@ -197,6 +208,25 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
       nftContract.safeTransferFrom(listings[tokenId].seller, offer.buyer, tokenId);
 
       emit OfferAccepted(tokenId, offerIndex, offer.buyer, msg.sender, offer.amount);
+    }
+
+    function createAuction(uint256 tokenId, uint256 minBid , uint256 duration) public {
+      require(nftContract.ownerOf(tokenId) == msg.sender,"NFT size ait degil!");
+      require(minBid > 0, "Minimum teklif sifirdan buyuk olmali");
+      require(duration > 0, "Sure sifirdan buyuk olmali");
+      require(!auctions[tokenId].isActive, "Zaten aktif auction var!");
+
+      auctions[tokenId] = Auction({
+        tokenId: tokenId,
+        seller: msg.sender,
+        minBid: minBid,
+        highestBid: 0,
+        highestBidder: address(0),
+        endTime: block.timestamp + duration,
+        isActive: true
+     });  
+
+      emit AuctionCreated(tokenId, msg.sender, minBid, block.timestamp + duration);
     }
 
 
