@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 /// @title Dijital Sanat Pazar Yeri Sözleşmesi
 /// @author Yaren 
 /// @notice NFT'lerin ART token karşılığında güvenli bir şekilde satılmasını, telif hakkı (Royalty) ve pazar yeri komisyon yönetimini sağlar.
-contract ArtMarketplace is Ownable, ReentrancyGuard {
+contract ArtMarketplace is Ownable, ReentrancyGuard,ERC721Holder {
     IERC20 public paymentToken;
     IERC721 public nftContract;
 
@@ -61,7 +62,7 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
 
     event AuctionCreated(uint256 indexed tokenId, address indexed seller,uint256 minBid, uint256 endTime);
     event BidPlaced(uint256 indexed tokenId,address indexed bidder,uint256 amount);
-
+    event AuctionEnded(uint256 indexed tokenId, address indexed winner, uint256 highestBid);
 
     /// @notice Pazar yeri kontratını ödeme tokenı ve NFT galerisi adresleriyle başlatır
     /// @param _paymentToken Ödemelerde kullanılacak ERC20 (Art Token) kontrat adresi
@@ -228,6 +229,8 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
         isActive: true
      });  
 
+      nftContract.safeTransferFrom(msg.sender,address(this),tokenId);
+
       emit AuctionCreated(tokenId, msg.sender, minBid, block.timestamp + duration);
     }
 
@@ -249,6 +252,28 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
         if(previousBidder != address(0)) {paymentToken.transfer(previousBidder, previousBid);}
 
         emit BidPlaced(tokenId,msg.sender,amount);
+    }
+
+    function endAuction(uint256 tokenId) public nonReentrant {
+      Auction storage auction = auctions[tokenId];
+    
+      require(auction.isActive, "Auction aktif degil!");
+      require(block.timestamp >= auction.endTime, "Auction henuz bitmedi!");
+      require(auction.highestBidder != address(0), "Kazanan yok!");
+      require(msg.sender == auction.seller || msg.sender == owner(),"Sadece satici bitirebilir!");
+
+      (address royaltyReceiver, uint256 royaltyAmount) =
+         IERC2981(address(nftContract)).royaltyInfo(tokenId, auction.highestBid);
+      uint256 fee = (auction.highestBid * marketplaceFeePercent) / 100;
+      uint256 sellerAmount = auction.highestBid - fee - royaltyAmount;
+
+      auction.isActive = false;
+
+      paymentToken.transfer(auction.seller, sellerAmount);
+      paymentToken.transfer(royaltyReceiver, royaltyAmount);
+      nftContract.safeTransferFrom(address(this), auction.highestBidder, tokenId);
+
+      emit AuctionEnded(tokenId, auction.highestBidder, auction.highestBid);
     }
 
 

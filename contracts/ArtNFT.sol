@@ -117,11 +117,7 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
    }
 
    
-   function safeMint(
-      address to, 
-      string memory uri,
-      uint256 collectionId
-    )public onlyArtist {
+   function safeMint(address to, string memory uri,uint256 collectionId)public onlyArtist {
      require(collectionId > 0 && collectionId <= collectionCounter, "Boyle bir koleksiyon yok!");
      require(collections[collectionId].isActive, "Koleksiyon aktif degil!");
      require(collections[collectionId].creator == msg.sender, "Bu koleksiyonun sahibi siz degilsiniz!");
@@ -136,11 +132,7 @@ contract ArtNFT is ERC721URIStorage, ERC721Enumerable, ERC2981, ERC721Burnable, 
       collections[collectionId].nftCount++;
     }
 
-    function batchMint(
-      address to,
-      string[] memory uris,
-      uint256 collectionId
-    ) public onlyArtist {
+    function batchMint(address to,string[] memory uris,uint256 collectionId) public onlyArtist {
 
       require(uris.length > 0, "En az bir URI girmelisiniz!");
       require(uris.length <= 20, "Tek seferde en fazla 20 NFT basabilirsiniz!");

@@ -433,6 +433,10 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
    describe("createAuction Testleri", async function () {
     const accept_NFT = ethers.parseUnits("50", 18);
 
+    beforeEach(async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+    });
+
    it("NFT sahibi olmayan açık arttırmaya koyamamalı", async function () {
     await expect(marketplace.connect(stranger).createAuction(0, 50, 86400)
      ).to.be.revertedWith("NFT size ait degil!");
@@ -452,9 +456,10 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
 
    it("Aynı NFT başka yerde açık arttırmada olamaz!", async function() {
       await marketplace.connect(artist).createAuction(0, 50, 86400);
-
-      await expect(marketplace.connect(artist).createAuction(0, 50, 86400)
-    ).to.be.revertedWith("Zaten aktif auction var!");
+   
+      await expect(
+        marketplace.connect(artist).createAuction(0, 50, 86400)
+      ).to.be.revertedWith("NFT size ait degil!");
    });
 
    it("Açık arttırma oluşturabilmeli", async function () {
@@ -515,22 +520,85 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
 
     it("Yeni teklif gelince eski bidder'a iade yapılmalı", async function () {
-    await marketplace.connect(buyer).placeBid(0, BID_AMOUNT);
-    const [,,, user2] = await ethers.getSigners();
+      await marketplace.connect(buyer).placeBid(0, BID_AMOUNT);
+      const [,,, user2] = await ethers.getSigners();
 
-    await token.mint(await user2.getAddress(), ethers.parseUnits("1000", 18));
-    await token.connect(user2).approve(await marketplace.getAddress(), ethers.parseUnits("1000", 18));
+      await token.mint(await user2.getAddress(), ethers.parseUnits("1000", 18));
+      await token.connect(user2).approve(await marketplace.getAddress(), ethers.parseUnits("1000", 18));
 
-    const buyerBefore = await token.balanceOf(buyer.address);
-    await marketplace.connect(user2).placeBid(0, HIGHER_BID);
-    const buyerAfter = await token.balanceOf(buyer.address);
-    expect(buyerAfter).to.be.above(buyerBefore);
+      const buyerBefore = await token.balanceOf(buyer.address);
+      await marketplace.connect(user2).placeBid(0, HIGHER_BID);
+      const buyerAfter = await token.balanceOf(buyer.address);
+      expect(buyerAfter).to.be.above(buyerBefore);
 
-    const auction = await marketplace.auctions(0);
-    expect(auction.highestBidder).to.equal(await user2.getAddress());
-    expect(auction.highestBid).to.equal(HIGHER_BID);
-});
+      const auction = await marketplace.auctions(0);
+      expect(auction.highestBidder).to.equal(await user2.getAddress());
+      expect(auction.highestBid).to.equal(HIGHER_BID);
+   });
+  });
 
+  describe("endAuction Testleri", function () {
+    const MIN_BID = ethers.parseUnits("50", 18);
+    const BID_AMOUNT = ethers.parseUnits("100", 18);
+    const DURATION = 60 * 60 * 24;
+
+    beforeEach(async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+      await marketplace.connect(artist).createAuction(0, MIN_BID, DURATION);
+        
+      await token.connect(buyer).approve(await marketplace.getAddress(), ethers.parseUnits("1000", 18));
+      await marketplace.connect(buyer).placeBid(0, BID_AMOUNT);
+        
+      await network.provider.send("evm_increaseTime", [DURATION + 1]);
+      await network.provider.send("evm_mine");
+    });
+
+    it("Auction bitince NFT kazanana geçmeli", async function () {
+        await marketplace.connect(artist).endAuction(0);
+        expect(await nft.ownerOf(0)).to.equal(buyer.address);
+    });
+
+    it("Auction bitince satıcıya para geçmeli", async function () {
+        const before = await token.balanceOf(artist.address);
+        await marketplace.connect(artist).endAuction(0);
+        const after = await token.balanceOf(artist.address);
+        expect(after).to.be.above(before);
+    });
+
+    it("Auction isActive false olmalı", async function () {
+        await marketplace.connect(artist).endAuction(0);
+        const auction = await marketplace.auctions(0);
+        expect(auction.isActive).to.be.false;
+    });
+
+    it("Süre dolmadan bitirilememeli", async function () {
+       await nft.connect(artist)["safeMint(address,string)"](await artist.getAddress(), "uri2");
+       await nft.connect(artist).approve(await marketplace.getAddress(), 1);
+       await marketplace.connect(artist).createAuction(1, MIN_BID, DURATION);
+
+       await expect(
+         marketplace.connect(artist).endAuction(1)
+       ).to.be.revertedWith("Auction henuz bitmedi!");
+    });
+
+    it("Kazanan yoksa bitirilememeli", async function () {
+      await nft.connect(artist)["safeMint(address,string)"](await artist.getAddress(), "uri3");
+      await nft.connect(artist).approve(await marketplace.getAddress(), 1);
+      await marketplace.connect(artist).createAuction(1, MIN_BID, DURATION);
+
+      await network.provider.send("evm_increaseTime", [DURATION + 1]);
+      await network.provider.send("evm_mine");
+
+      await expect(
+        marketplace.connect(artist).endAuction(1)
+      ).to.be.revertedWith("Kazanan yok!");
+    });
+
+    it("Satıcı olmayan bitiremez", async function () {
+        await expect(
+            marketplace.connect(buyer).endAuction(0)
+        ).to.be.revertedWith("Sadece satici bitirebilir!");
+    });
   });
 
 });
