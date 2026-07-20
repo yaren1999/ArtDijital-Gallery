@@ -234,6 +234,10 @@ contract ArtMarketplace is Ownable, ReentrancyGuard,ERC721Holder {
       emit AuctionCreated(tokenId, msg.sender, minBid, block.timestamp + duration);
     }
 
+    function getAuction(uint256 tokenId) public view returns (Auction memory) {
+       return auctions[tokenId];
+    }
+
     function placeBid(uint256 tokenId, uint256 amount) public {
         Auction storage auction = auctions[tokenId];
 

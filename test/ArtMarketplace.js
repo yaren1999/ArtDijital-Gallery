@@ -488,6 +488,19 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
 
     
+    it("Auction aktif olmamalı", async function () {
+      await marketplace.connect(buyer).placeBid(0, BID_AMOUNT);
+
+      await network.provider.send("evm_increaseTime", [DURATION + 1]);
+      await network.provider.send("evm_mine");
+
+      await marketplace.connect(artist).endAuction(0);
+
+      await expect(
+        marketplace.connect(buyer).placeBid(0, BID_AMOUNT)
+      ).to.be.revertedWith("Auction aktif degil!");
+   });
+
 
     it("Açık arttırmanın süresi dolmadan teklif verilmeli",async function () {
       await ethers.provider.send("evm_increaseTime",[DURATION]);
@@ -601,4 +614,24 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
     });
   });
 
+  describe("getAuction Testleri", function () {
+    const MIN_BID = ethers.parseUnits("50", 18);
+    const DURATION = 86400;
+
+    beforeEach(async function () {
+        await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+        await marketplace.connect(artist).createAuction(0, MIN_BID, DURATION);
+    });
+
+  });
+
+   it("Auction bilgileri okunabilmeli", async function () {
+      await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+      await marketplace.connect(artist).createAuction(0, ethers.parseUnits("50", 18), 86400);
+      const auction = await marketplace.getAuction(0);
+
+      expect(auction.tokenId).to.equal(0);
+      expect(auction.seller).to.equal(artist.address);
+      expect(auction.isActive).to.be.true;
+  });
 });
