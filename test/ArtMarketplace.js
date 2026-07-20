@@ -470,4 +470,67 @@ describe("ArtMarketplace (Pazar Yeri) Testleri", function () {
 
   });  
 
+  describe("placeBid Testleri",async function() {
+     const MIN_BID = ethers.parseUnits("50", 18);
+    const BID_AMOUNT = ethers.parseUnits("100", 18);
+    const HIGHER_BID = ethers.parseUnits("150", 18);
+    const DURATION = 60 * 60 * 24; 
+
+    beforeEach(async function () {
+       await nft.connect(artist).approve(await marketplace.getAddress(), 0);
+       await marketplace.connect(artist).createAuction(0, MIN_BID, DURATION);
+       await token.connect(buyer).approve(await marketplace.getAddress(), ethers.parseUnits("1000", 18));
+    });
+
+    
+
+    it("Açık arttırmanın süresi dolmadan teklif verilmeli",async function () {
+      await ethers.provider.send("evm_increaseTime",[DURATION]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(marketplace.connect(buyer).placeBid(0,BID_AMOUNT)
+      ).to.be.revertedWith("Auction sona ermis!");
+
+    });
+
+    it("teklif minimum tekliften büyük olmalı",async function () {
+        await expect(
+         marketplace.connect(buyer).placeBid(0, ethers.parseUnits("10", 18))
+         ).to.be.revertedWith("Teklif minimum tekliften dusuk!");
+    });
+    it("teklif mecut tekliften daha yuksek olmalı",async function () {
+        await marketplace.connect(buyer).placeBid(0, BID_AMOUNT);
+        
+        await expect(
+            marketplace.connect(stranger).placeBid(0, ethers.parseUnits("90", 18))
+        ).to.be.revertedWith("Teklif mevcut en yuksek tekliften buyuk olmali!")
+    });
+
+     it("Teklif başarıyla verilmeli", async function () {
+        await marketplace.connect(buyer).placeBid(0, BID_AMOUNT);
+        
+        const auction = await marketplace.auctions(0);
+        expect(auction.highestBid).to.equal(BID_AMOUNT);
+        expect(auction.highestBidder).to.equal(await buyer.getAddress());
+    });
+
+    it("Yeni teklif gelince eski bidder'a iade yapılmalı", async function () {
+    await marketplace.connect(buyer).placeBid(0, BID_AMOUNT);
+    const [,,, user2] = await ethers.getSigners();
+
+    await token.mint(await user2.getAddress(), ethers.parseUnits("1000", 18));
+    await token.connect(user2).approve(await marketplace.getAddress(), ethers.parseUnits("1000", 18));
+
+    const buyerBefore = await token.balanceOf(buyer.address);
+    await marketplace.connect(user2).placeBid(0, HIGHER_BID);
+    const buyerAfter = await token.balanceOf(buyer.address);
+    expect(buyerAfter).to.be.above(buyerBefore);
+
+    const auction = await marketplace.auctions(0);
+    expect(auction.highestBidder).to.equal(await user2.getAddress());
+    expect(auction.highestBid).to.equal(HIGHER_BID);
+});
+
+  });
+
 });

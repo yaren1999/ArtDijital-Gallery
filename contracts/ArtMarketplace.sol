@@ -58,7 +58,9 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
     event OfferCreated(uint256 indexed tokenId, address indexed buyer, uint256 amount);
     event OfferCanceled(uint256 indexed tokenId, uint256 indexed offerIndex, address indexed buyer);
     event OfferAccepted(  uint256 indexed tokenId, uint256 indexed offerIndex, address indexed buyer,address seller,uint256 amount);
+
     event AuctionCreated(uint256 indexed tokenId, address indexed seller,uint256 minBid, uint256 endTime);
+    event BidPlaced(uint256 indexed tokenId,address indexed bidder,uint256 amount);
 
 
     /// @notice Pazar yeri kontratını ödeme tokenı ve NFT galerisi adresleriyle başlatır
@@ -227,6 +229,26 @@ contract ArtMarketplace is Ownable, ReentrancyGuard {
      });  
 
       emit AuctionCreated(tokenId, msg.sender, minBid, block.timestamp + duration);
+    }
+
+    function placeBid(uint256 tokenId, uint256 amount) public {
+        Auction storage auction = auctions[tokenId];
+
+        require(auction.isActive, "Auction aktif degil!");
+        require(block.timestamp < auction.endTime,"Auction sona ermis!");
+        require(amount >= auction.minBid,"Teklif minimum tekliften dusuk!");
+        require(amount > auction.highestBid,"Teklif mevcut en yuksek tekliften buyuk olmali!");
+
+        address previousBidder = auction.highestBidder;
+        uint256 previousBid = auction.highestBid;
+
+        auction.highestBid = amount;
+        auction.highestBidder = msg.sender;
+
+        paymentToken.transferFrom(msg.sender,address(this),amount);
+        if(previousBidder != address(0)) {paymentToken.transfer(previousBidder, previousBid);}
+
+        emit BidPlaced(tokenId,msg.sender,amount);
     }
 
 
